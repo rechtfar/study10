@@ -368,7 +368,15 @@ function rateCard(rating) {
 
 function skipCard()     { nextCard(); }
 function exitPractice() { stopTimer(); setState({ screen: "home", currentCard: null }); window.scrollTo(0, 0); }
+function goManage() {
+  setState({ screen: "manage" });
+  window.scrollTo(0, 0);
+}
 
+function goHome() {
+  setState({ screen: "home" });
+  window.scrollTo(0, 0);
+}
 // ── [NEW] MCQ answer logic ─────────────────────────────────────
 
 // Toggle one option's selected state on/off (called before submission)
