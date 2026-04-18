@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlashStudy</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f4; --bg3: #ececea;
+    --text: #1a1a18; --text2: #6b6b68; --text3: #9a9a96;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --radius: 8px; --radius-lg: 12px;
+    --green: #16a34a; --green-bg: #dcfce7; --green-border: rgba(22,163,74,0.3);
+    --amber: #d97706; --amber-bg: #fef3c7; --amber-border: rgba(217,119,6,0.3);
+    --red:   #dc2626; --red-bg:   #fee2e2; --red-border:   rgba(220,38,38,0.3);
+    --blue:  #2563eb; --blue-bg:  #dbeafe; --blue-border:  rgba(37,99,235,0.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --text: #f5f5f0; --text2: #a0a09a; --text3: #6b6b68;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --green: #4ade80; --green-bg: rgba(74,222,128,0.12); --green-border: rgba(74,222,128,0.3);
+      --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.12); --amber-border: rgba(251,191,36,0.3);
+      --red:   #f87171; --red-bg:   rgba(248,113,113,0.12); --red-border:  rgba(248,113,113,0.3);
+      --blue:  #60a5fa; --blue-bg:  rgba(96,165,250,0.12);  --blue-border: rgba(96,165,250,0.25);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; padding: 20px 16px 60px; font-size: 15px; line-height: 1.5; }
+  #app { width: 100%; max-width: 560px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 17px; font-weight: 600; }
+  .sub { font-size: 13px; color: var(--text2); }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .card-shaded { background: var(--bg2); border-radius: var(--radius-lg); padding: 20px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.12s, opacity 0.12s, transform 0.08s; white-space: nowrap; }
+  .btn:hover { background: var(--bg2); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+  .btn-primary { background: var(--text); color: var(--bg); border: none; }
+  .btn-primary:hover { opacity: 0.88; background: var(--text); }
+  .btn-full { width: 100%; padding: 14px; font-size: 15px; }
+  .btn-easy   { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .btn-medium { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .btn-hard   { background: var(--red-bg);   color: var(--red);   border-color: var(--red-border);   }
+  .btn-danger { color: var(--red); border-color: var(--red-border); }
+  .btn-danger:hover { background: var(--red-bg); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .stat-box { background: var(--bg2); padding: 14px 16px; border-radius: var(--radius); }
+  .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .stat-value { font-size: 24px; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--blue-bg); color: var(--blue); border: 0.5px solid var(--blue-border); }
+  .tag-pill { padding: 7px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border2); background: transparent; color: var(--text); font-family: inherit; transition: background 0.12s; }
+  .tag-pill.active { background: var(--text); color: var(--bg); }
+  .tag-pill:hover:not(.active) { background: var(--bg2); }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  input, textarea { font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 10px 12px; width: 100%; outline: none; transition: border-color 0.15s; }
+  input:focus, textarea:focus { border-color: var(--text); }
+  textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .field { display: flex; flex-direction: column; }
+  .error { font-size: 13px; color: var(--red); }
+  .timer-track { height: 5px; border-radius: 3px; background: var(--bg3); overflow: hidden; margin-bottom: 6px; }
+  .timer-bar { height: 100%; border-radius: 3px; transition: width 1s linear, background 0.5s; }
+  .section-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .info-box { background: var(--bg2); border-radius: var(--radius); padding: 14px 16px; font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .progress-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+  .center { text-align: center; }
+  .muted { color: var(--text2); }
+  .small { font-size: 12px; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ═══ NEW STYLES — MCQ support ════════════════════════════════
+     All rules below this line are additions; nothing above changed. */
+
+  /* Alert banners */
+  .alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; text-align: center; }
+  .alert-success { background: var(--green-bg); color: var(--green); border: 0.5px solid var(--green-border); }
+  .alert-warning { background: var(--amber-bg); color: var(--amber); border: 0.5px solid var(--amber-border); }
+
+  /* Badge shown next to MCQ cards in the manage list */
+  .badge-mcq { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:4px; background:var(--blue-bg); color:var(--blue); border:0.5px solid var(--blue-border); }
+
+  /* Flashcard / Multiple Choice toggle in the form */
+  .type-btn { padding:8px 16px; border-radius:var(--radius); border:0.5px solid var(--border2); background:transparent; color:var(--text2); font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; transition:background .12s,color .12s; }
+  .type-btn.active { background:var(--text); color:var(--bg); border-color:transparent; }
+  .type-btn:not(.active):hover { background:var(--bg2); color:var(--text); }
+
+  /* MCQ option button — the clickable rows shown during practice */
+  .mcq-option { display:flex; align-items:center; gap:12px; width:100%; padding:12px 16px; border-radius:var(--radius); border:0.5px solid var(--border2); background:transparent; color:var(--text); font-size:14px; font-family:inherit; text-align:left; cursor:pointer; transition:background .1s,border-color .1s; }
+  .mcq-option:hover:not(.mcq-result) { background:var(--bg2); }
+
+  /* Checkbox indicator inside each option */
+  .mcq-checkbox { flex-shrink:0; width:20px; height:20px; border-radius:4px; border:0.5px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; transition:background .1s,border-color .1s; }
+
+  /* Selected (before submit) — blue highlight */
+  .mcq-option.mcq-selected { border-color:var(--blue); background:var(--blue-bg); color:var(--blue); }
+  .mcq-option.mcq-selected .mcq-checkbox { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+  /* After submission — result states */
+  .mcq-option.mcq-result { cursor:default; pointer-events:none; }
+  .mcq-option.res-correct-hit  { border-color:var(--green-border); background:var(--green-bg); color:var(--green); } /* right, selected   ✓ */
+  .mcq-option.res-correct-miss { border-color:var(--amber-border); background:var(--amber-bg); color:var(--amber); } /* right, missed     ○ */
+  .mcq-option.res-wrong-picked { border-color:var(--red-border);   background:var(--red-bg);   color:var(--red);   } /* wrong, selected   ✗ */
+  .mcq-option.res-wrong-skip   { opacity:.42; }                                                                        /* wrong, not picked   */
+
+  /* Icon and label columns inside result options */
+  .mcq-icon { flex-shrink:0; width:20px; font-size:14px; font-weight:700; text-align:center; }
+  .mcq-result-label { margin-left:auto; font-size:11px; opacity:.8; white-space:nowrap; }
+
+  /* Legend below result list */
+  .mcq-legend { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--text2); }
+  .mcq-legend span { display:flex; align-items:center; gap:5px; }
+
+  /* Option builder rows in the form */
+  .mcq-form-row { display:flex; align-items:center; gap:8px; }
+
+  /* Toggle button that flips an option's correct flag */
+  .mcq-correct-toggle { flex-shrink:0; width:32px; height:32px; border-radius:var(--radius); border:0.5px solid var(--border2); background:transparent; color:var(--text2); font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .1s,color .1s,border-color .1s; }
+  .mcq-correct-toggle.is-correct { background:var(--green-bg); color:var(--green); border-color:var(--green-border); }
+  .mcq-correct-toggle:not(.is-correct):hover { background:var(--bg2); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  FlashStudy v2 — Multi-Answer MCQ support
+//  One file · no dependencies · data in localStorage
+//
+//  WHAT CHANGED vs v1 (all changes marked inline):
+//  [DATA]    normalizeCard() for backward compat with v1 saves
+//  [DATA]    SAMPLES now includes two MCQ example questions
+//  [STATE]   4 new fields: selectedOptions, submitted, formType, formOptions
+//  [LOGIC]   nextCard / startPractice reset MCQ state each round
+//  [LOGIC]   tickTimer auto-submits MCQ when time expires
+//  [NEW FN]  toggleOption, submitMCQ, getMCQResult
+//  [NEW FN]  addFormOption, removeFormOption, toggleFormOptionCorrect
+//  [CHANGED] openAdd, openEdit, saveForm — handle MCQ type
+//  [CHANGED] renderPractice routes to renderFlashcardPractice or renderMCQPractice
+//  [NEW FN]  renderFlashcardPractice (body extracted from old renderPractice)
+//  [NEW FN]  renderMCQPractice
+//  [CHANGED] renderManage shows MCQ badge + option summary
+//  [CHANGED] renderForm adds type selector + MCQ option builder
+//  [CHANGED] HANDLERS table + attachEvents wired for all new actions
+// ══════════════════════════════════════════════════════════════
+
+const TIMER_SECS = 30;
+const WEIGHT = { easy: 1, medium: 5, hard: 15 };
+
+function genId() {
+  return Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+}
+
+// Picks a card at random, weighted by each card's .weight value.
+// Higher weight = higher probability of appearing.
+function weightedRandom(items) {
+  if (!items.length) return null;
+  const total = items.reduce((s, q) => s + (q.weight || 5), 0);
+  let r = Math.random() * total;
+  for (const q of items) { r -= (q.weight || 5); if (r <= 0) return q; }
+  return items[items.length - 1];
+}
+
+// ── [CHANGED] SAMPLES: existing cards get type:"flashcard";
+//   two MCQ examples are appended at the end ─────────────────
+const SAMPLES = [
+  { id: genId(), type: "flashcard", text: "What is the powerhouse of the cell?",   answer: "The mitochondria", tags: ["biology"],     weight: 5, timesAnswered: 0 },
+  { id: genId(), type: "flashcard", text: "What is 12 × 12?",                       answer: "144",              tags: ["math"],        weight: 5, timesAnswered: 0 },
+  { id: genId(), type: "flashcard", text: "Who wrote '1984'?",                       answer: "George Orwell",    tags: ["literature"],  weight: 5, timesAnswered: 0 },
+  { id: genId(), type: "flashcard", text: "What is the chemical symbol for gold?",  answer: "Au",               tags: ["chemistry"],   weight: 5, timesAnswered: 0 },
+  { id: genId(), type: "flashcard", text: "In what year did World War II end?",     answer: "1945",             tags: ["history"],     weight: 5, timesAnswered: 0 },
+  // [NEW] MCQ — multiple correct answers
+  {
+    id: genId(), type: "mcq",
+    text: "Which of the following are prime numbers?",
+    answer: "",  // unused for MCQ; correctness lives in options[].correct
+    tags: ["math"], weight: 5, timesAnswered: 0,
+    options: [
+      { id: genId(), text: "2",  correct: true  },
+      { id: genId(), text: "3",  correct: true  },
+      { id: genId(), text: "4",  correct: false },
+      { id: genId(), text: "7",  correct: true  },
+      { id: genId(), text: "9",  correct: false },
+      { id: genId(), text: "11", correct: true  },
+    ],
+  },
+  // [NEW] MCQ — mix of correct/incorrect
+  {
+    id: genId(), type: "mcq",
+    text: "Which are JavaScript primitive data types?",
+    answer: "", tags: ["programming"], weight: 5, timesAnswered: 0,
+    options: [
+      { id: genId(), text: "String",    correct: true  },
+      { id: genId(), text: "Number",    correct: true  },
+      { id: genId(), text: "Boolean",   correct: true  },
+      { id: genId(), text: "Array",     correct: false },
+      { id: genId(), text: "Object",    correct: false },
+      { id: genId(), text: "undefined", correct: true  },
+    ],
+  },
+];
+
+// ── [NEW] normalizeCard ────────────────────────────────────────
+// Cards saved by v1 have no `type` or `options` field.
+// This function grafts in safe defaults so the rest of the code
+// can always read card.type and card.options without null-checks.
+function normalizeCard(card) {
+  return {
+    type: "flashcard",  // v1 default; explicit type in v2 cards overrides
+    options: [],        // v1 cards have no options array
+    ...card,
+  };
+}
+
+// ── localStorage ───────────────────────────────────────────────
+// [CHANGED] loadCards now wraps every card through normalizeCard
+// and checks both v2 key (new) and v1 key (migration path).
+function loadCards() {
+  try {
+    const raw2 = localStorage.getItem("flashstudy_cards_v2");
+    if (raw2) return JSON.parse(raw2).map(normalizeCard);
+    const raw1 = localStorage.getItem("flashstudy_cards_v1");
+    if (raw1) return JSON.parse(raw1).map(normalizeCard); // silently migrate
+    return SAMPLES;
+  } catch { return SAMPLES; }
+}
+function saveCards(cards) { localStorage.setItem("flashstudy_cards_v2", JSON.stringify(cards)); }
+function loadStats() {
+  try {
+    const raw = localStorage.getItem("flashstudy_stats_v1");
+    return raw ? JSON.parse(raw) : { total: 0, easy: 0, medium: 0, hard: 0 };
+  } catch { return { total: 0, easy: 0, medium: 0, hard: 0 }; }
+}
+function saveStats(stats) { localStorage.setItem("flashstudy_stats_v1", JSON.stringify(stats)); }
+
+// ══════════════════════════════════════════════════════════════
+//  Global state
+//  [CHANGED] Four new fields added; all existing fields unchanged
+// ══════════════════════════════════════════════════════════════
+let state = {
+  cards:       loadCards(),
+  stats:       loadStats(),
+  screen:      "home",         // "home" | "practice" | "manage" | "form"
+  filterTag:   "all",
+  // Practice (unchanged)
+  currentCard: null,
+  revealed:    false,
+  timer:       TIMER_SECS,
+  timerRunning: false,
+  expired:     false,
+  // [NEW] MCQ practice: tracks the user's multi-select state
+  selectedOptions: [],   // array of option IDs the user has checked
+  submitted:       false, // true after Submit Answer is clicked (or timer fires)
+  // Form (unchanged)
+  formId:      null,
+  formText:    "",
+  formAnswer:  "",
+  formTags:    "",
+  formError:   "",
+  deleteConfirm: null,
+  // [NEW] Form: question type + list of MCQ answer options
+  formType:    "flashcard",  // "flashcard" | "mcq"
+  formOptions: [],            // [{id, text, correct}, …] — up to 10 entries
+};
+
+let timerInterval = null;
+const root = document.getElementById("app");
+
+function setState(partial) {
+  state = { ...state, ...partial };
+  render();
+}
+
+// ── Timer ──────────────────────────────────────────────────────
+// [CHANGED] On expiry, MCQ questions are auto-submitted so the
+//           result view renders (instead of an empty state).
+function tickTimer() {
+  if (!state.timerRunning) return;
+  if (state.timer <= 1) {
+    clearInterval(timerInterval);
+    const isMCQ = state.currentCard && state.currentCard.type === "mcq";
+    setState({
+      timer:     0,
+      timerRunning: false,
+      expired:   true,
+      revealed:  true,
+      submitted: isMCQ ? true : state.submitted, // [NEW] auto-submit MCQ
+    });
+  } else {
+    state.timer -= 1;
+    render();
+  }
+}
+function beginTimer() {
+  clearInterval(timerInterval);
+  state.timer       = TIMER_SECS;
+  state.timerRunning = true;
+  state.expired     = false;
+  timerInterval     = setInterval(tickTimer, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); state.timerRunning = false; }
+
+// ── Practice ───────────────────────────────────────────────────
+function getPool() {
+  return state.filterTag === "all"
+    ? state.cards
+    : state.cards.filter(c => c.tags.includes(state.filterTag));
+}
+
+// [CHANGED] Resets selectedOptions and submitted for each new card
+function nextCard(customPool) {
+  const pool = customPool || getPool();
+  if (!pool.length) return;
+  state.currentCard     = weightedRandom(pool);
+  state.revealed        = false;
+  state.expired         = false;
+  state.selectedOptions = []; // [NEW] clear selections from previous round
+  state.submitted       = false; // [NEW] clear submit flag
+  beginTimer();
+  render();
+}
+
+// [CHANGED] Same MCQ resets applied on first card of a session
+function startPractice() {
+  const pool = getPool();
+  if (!pool.length) return;
+  state.currentCard     = weightedRandom(pool);
+  state.revealed        = false;
+  state.expired         = false;
+  state.selectedOptions = []; // [NEW]
+  state.submitted       = false; // [NEW]
+  state.screen          = "practice";
+  beginTimer();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function revealAnswer() { stopTimer(); setState({ revealed: true }); } // flashcard only
+
+// Unchanged — weight update is type-agnostic; works for both card types
+function rateCard(rating) {
+  const newCards = state.cards.map(c =>
+    c.id === state.currentCard.id
+      ? { ...c, weight: WEIGHT[rating], timesAnswered: (c.timesAnswered || 0) + 1 }
+      : c
+  );
+  const ns = state.stats;
+  const newStats = {
+    total:  ns.total  + 1,
+    easy:   ns.easy   + (rating === "easy"   ? 1 : 0),
+    medium: ns.medium + (rating === "medium" ? 1 : 0),
+    hard:   ns.hard   + (rating === "hard"   ? 1 : 0),
+  };
+  saveCards(newCards); saveStats(newStats);
+  state.cards = newCards; state.stats = newStats;
+  nextCard();
+}
+
+function skipCard()     { nextCard(); }
+function exitPractice() { stopTimer(); setState({ screen: "home", currentCard: null }); window.scrollTo(0, 0); }
+
+// ── [NEW] MCQ answer logic ─────────────────────────────────────
+
+// Toggle one option's selected state on/off (called before submission)
+function toggleOption(optId) {
+  const already = state.selectedOptions.includes(optId);
+  setState({
+    // Remove if already selected; add if not yet selected (multi-select)
+    selectedOptions: already
+      ? state.selectedOptions.filter(id => id !== optId)
+      : [...state.selectedOptions, optId],
+  });
+}
+
+// Lock in selections, stop the timer, and reveal the result view
+function submitMCQ() {
+  stopTimer();
+  setState({ submitted: true, revealed: true });
+}
+
+// Evaluate selections against the answer key.
+// Each option gets an "outcome" string used by the renderer to pick a CSS class.
+// Returns: outcomes[], correctTotal, correctHit, wrongPicked, perfect (bool)
+function getMCQResult(card, selectedIds) {
+  const opts = card.options || [];
+
+  const outcomes = opts.map(opt => {
+    const sel = selectedIds.includes(opt.id);
+    // Four possible outcomes per option:
+    if ( opt.correct &&  sel) return { ...opt, outcome: "correct-hit"  }; // ✓ green
+    if ( opt.correct && !sel) return { ...opt, outcome: "correct-miss" }; // ○ amber (missed)
+    if (!opt.correct &&  sel) return { ...opt, outcome: "wrong-picked" }; // ✗ red   (wrong pick)
+    return                           { ...opt, outcome: "wrong-skip"   }; // dimmed  (correctly ignored)
+  });
+
+  const correctTotal = opts.filter(o =>  o.correct).length;
+  const correctHit   = outcomes.filter(o => o.outcome === "correct-hit").length;
+  const wrongPicked  = outcomes.filter(o => o.outcome === "wrong-picked").length;
+  // Perfect: every correct answer selected AND no wrong ones ticked
+  const perfect      = correctHit === correctTotal && wrongPicked === 0;
+  return { outcomes, correctTotal, correctHit, wrongPicked, perfect };
+}
+
+// ── Card management ────────────────────────────────────────────
+
+// [CHANGED] Now initialises formType and a starter formOptions array
+function openAdd() {
+  setState({
+    screen: "form",
+    formId: null, formText: "", formAnswer: "", formTags: "", formError: "",
+    formType: "flashcard",
+    formOptions: [                                // [NEW] two blank option slots
+      { id: genId(), text: "", correct: false },
+      { id: genId(), text: "", correct: false },
+    ],
+  });
+  window.scrollTo(0, 0);
+}
+
+// [CHANGED] Loads type + deep-copied options when editing an existing card
+function openEdit(card) {
+  setState({
+    screen: "form",
+    formId: card.id, formText: card.text, formAnswer: card.answer,
+    formTags: card.tags.join(", "), formError: "",
+    formType: card.type || "flashcard",
+    formOptions: (card.options || []).map(o => ({ ...o })), // [NEW] deep copy
+  });
+  window.scrollTo(0, 0);
+}
+
+// [CHANGED] Branches on formType; MCQ path validates options array
+function saveForm() {
+  if (!state.formText.trim()) { setState({ formError: "Question text is required." }); return; }
+  let cardData;
+
+  if (state.formType === "flashcard") {
+    // Flashcard path — unchanged
+    if (!state.formAnswer.trim()) { setState({ formError: "Answer is required." }); return; }
+    cardData = { type: "flashcard", text: state.formText, answer: state.formAnswer, options: [] };
+
+  } else {
+    // [NEW] MCQ path: discard blank option rows then validate count
+    const validOpts = state.formOptions.filter(o => o.text.trim());
+    if (validOpts.length < 2) {
+      setState({ formError: "Add at least 2 non-empty answer options." }); return;
+    }
+    cardData = { type: "mcq", text: state.formText, answer: "", options: validOpts };
+  }
+
+  const tags = state.formTags.split(",").map(t => t.trim()).filter(Boolean);
+  let newCards;
+  if (state.formId) {
+    newCards = state.cards.map(c => c.id === state.formId ? { ...c, ...cardData, tags } : c);
+  } else {
+    newCards = [...state.cards, { id: genId(), weight: 5, timesAnswered: 0, tags, ...cardData }];
+  }
+  saveCards(newCards);
+  state.cards = newCards;
+  setState({ screen: "manage", formId: null });
+  window.scrollTo(0, 0);
+}
+
+function deleteCard(id) {
+  if (state.deleteConfirm === id) {
+    const nc = state.cards.filter(c => c.id !== id);
+    saveCards(nc); setState({ cards: nc, deleteConfirm: null });
+  } else {
+    setState({ deleteConfirm: id });
+  }
+}
+
+function resetProgress() {
+  if (!confirm("Reset all ratings and progress? Cards are kept.")) return;
+  const ns = { total: 0, easy: 0, medium: 0, hard: 0 };
+  const nc = state.cards.map(c => ({ ...c, weight: 5, timesAnswered: 0 }));
+  saveCards(nc); saveStats(ns); setState({ cards: nc, stats: ns });
+}
+
+// ── [NEW] MCQ option management (form screen only) ─────────────
+
+// Append a blank option row (hard cap: 10)
+function addFormOption() {
+  if (state.formOptions.length >= 10) return;
+  setState({ formOptions: [...state.formOptions, { id: genId(), text: "", correct: false }] });
+}
+
+// Remove the option with matching id (min-2 enforced in saveForm)
+function removeFormOption(optId) {
+  setState({ formOptions: state.formOptions.filter(o => o.id !== optId) });
+}
+
+// Flip the correct flag on one option (correct ↔ incorrect)
+function toggleFormOptionCorrect(optId) {
+  setState({
+    formOptions: state.formOptions.map(o =>
+      o.id === optId ? { ...o, correct: !o.correct } : o
+    ),
+  });
+}
+
+// ── Import / Export ────────────────────────────────────────────
+function exportCards() {
+  const blob = new Blob([JSON.stringify(state.cards, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a"); a.href = url; a.download = "flashcards.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+function importCards() {
+  const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const arr = JSON.parse(ev.target.result);
+        if (!Array.isArray(arr)) throw new Error();
+        // [CHANGED] normalizeCard handles MCQ cards from external sources
+        const imported = arr
+          .filter(q => q.text && (q.answer || q.type === "mcq"))
+          .map(q => normalizeCard({ id: genId(), weight: 5, timesAnswered: 0, ...q }));
+        if (!imported.length) { alert("No valid cards found."); return; }
+        const nc = [...state.cards, ...imported];
+        saveCards(nc); setState({ cards: nc });
+        alert(`Imported ${imported.length} card${imported.length !== 1 ? "s" : ""}!`);
+      } catch { alert("Invalid JSON file."); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Render
+// ══════════════════════════════════════════════════════════════
+
+function renderHome() {
+  const pool    = getPool();
+  const allTags = [...new Set(state.cards.flatMap(c => c.tags))].filter(Boolean).sort();
+  const mastered  = state.cards.filter(c => c.weight === 1 && c.timesAnswered > 0).length;
+  const needsWork = state.cards.filter(c => c.weight === 15).length;
+  const mcqCount  = state.cards.filter(c => c.type === "mcq").length; // [NEW]
+  const { total, easy, medium, hard } = state.stats;
+  return `
+    <div class="col" style="gap:20px">
+      <div><h1>FlashStudy</h1><p class="sub">Spaced repetition · the smarter way to study</p></div>
+      <div class="grid-stats">
+        ${[["Total cards",state.cards.length,""],["Sessions",total,""],["Mastered",mastered,"color:var(--green)"],["Needs work",needsWork,"color:var(--red)"]]
+          .map(([l,v,s])=>`<div class="stat-box"><p class="stat-label">${l}</p><p class="stat-value" style="${s}">${v}</p></div>`).join("")}
+      </div>
+      ${allTags.length ? `<div><p class="section-label">Study by tag</p><div class="tags-row">
+        ${["all",...allTags].map(t=>{
+          const n = t==="all" ? state.cards.length : state.cards.filter(c=>c.tags.includes(t)).length;
+          return `<button class="tag-pill ${state.filterTag===t?"active":""}" data-event="click" data-handler="setTag_${t}">${t==="all"?"All":t} (${n})</button>`;
+        }).join("")}
+      </div></div>` : ""}
+      <div class="col" style="gap:10px">
+        <button class="btn btn-primary btn-full" data-event="click" data-handler="startPractice"
+                ${!pool.length?"disabled":""} style="${!pool.length?"opacity:.4":""}">
+          Start Practice — ${pool.length} card${pool.length!==1?"s":""}${state.filterTag!=="all"?" · "+state.filterTag:""}
+        </button>
+        <div class="grid-2">
+          <button class="btn" data-event="click" data-handler="goManage">Manage Cards</button>
+          <button class="btn" data-event="click" data-handler="openAdd">+ Add Card</button>
+        </div>
+      </div>
+      ${total > 0 ? `<div class="info-box">
+        <p class="small muted" style="margin-bottom:10px">Session breakdown</p>
+        <div class="progress-bar" style="margin-bottom:10px">
+          ${easy>0?`<div style="flex:${easy};background:var(--green)"></div>`:""}
+          ${medium>0?`<div style="flex:${medium};background:var(--amber)"></div>`:""}
+          ${hard>0?`<div style="flex:${hard};background:var(--red)"></div>`:""}
+        </div>
+        <div class="row" style="gap:16px;font-size:12px">
+          <span style="color:var(--green)">Easy ${easy}</span>
+          <span style="color:var(--amber)">Medium ${medium}</span>
+          <span style="color:var(--red)">Hard ${hard}</span>
+          <button class="btn" style="margin-left:auto;padding:4px 10px;font-size:11px"
+                  data-event="click" data-handler="resetProgress">Reset</button>
+        </div>
+      </div>` : ""}
+      <div class="info-box">
+        <strong style="font-weight:600">How it works:</strong>
+        Rate each card after answering. Hard = 15×, Medium = 5×, Easy = 1× frequency.
+        ${mcqCount > 0 ? `Deck includes ${mcqCount} multiple-choice question${mcqCount!==1?"s":""}.` : ""}
+      </div>
+    </div>`;
+}
+
+// ── [CHANGED] renderPractice routes to the right body renderer ──
+function renderPractice() {
+  const { currentCard: q, timer, expired, stats } = state;
+  if (!q || !getPool().length) {
+    return `<div class="col center" style="padding:40px 0">
+      <p class="muted" style="margin-bottom:16px">No cards to practice.</p>
+      <button class="btn" data-event="click" data-handler="exitPractice">← Go back</button>
+    </div>`;
+  }
+  const pct  = (timer / TIMER_SECS) * 100;
+  const tcol = timer > 15 ? "var(--green)" : timer > 7 ? "var(--amber)" : "var(--red)";
+  const header = `
+    <div class="row-between">
+      <button class="btn" style="padding:7px 13px;font-size:13px" data-event="click" data-handler="exitPractice">← Exit</button>
+      <div class="row" style="gap:8px">
+        ${state.filterTag!=="all"?`<span class="tag">${state.filterTag}</span>`:""}
+        <span class="sub">${stats.total} answered</span>
+      </div>
+      <button class="btn" style="padding:7px 13px;font-size:13px" data-event="click" data-handler="skipCard">Skip →</button>
+    </div>`;
+  const timerBar = `
+    <div>
+      <div class="timer-track"><div class="timer-bar" style="width:${pct}%;background:${tcol}"></div></div>
+      <div class="row-between small">
+        <span class="muted">Timer</span>
+        <span style="font-weight:600;color:${tcol}">${expired?"Time's up!":timer+"s"}</span>
+      </div>
+    </div>`;
+  // [NEW] Route based on card type
+  const body = (q.type === "mcq") ? renderMCQPractice(q) : renderFlashcardPractice(q);
+  return `<div class="col" style="gap:16px">${header}${timerBar}${body}</div>`;
+}
+
+// Flashcard body — logic extracted verbatim from v1 renderPractice
+function renderFlashcardPractice(q) {
+  const { revealed, expired } = state;
+  return `
+    <div class="card" style="min-height:160px;display:flex;flex-direction:column;justify-content:center">
+      ${q.tags.length?`<div class="tags-row" style="margin-bottom:14px">${q.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>`:""}
+      <p style="font-size:19px;font-weight:500;line-height:1.55;text-align:center">${escHtml(q.text)}</p>
+      ${q.timesAnswered>0?`<p class="small muted center" style="margin-top:14px">Studied ${q.timesAnswered}× · ${q.weight===1?"Easy":q.weight===15?"Hard":"Medium"} weight</p>`:""}
+    </div>
+    ${!revealed ? `
+      <button class="btn btn-primary btn-full" style="padding:15px;font-size:15px"
+              data-event="click" data-handler="revealAnswer">Show Answer</button>
+    ` : `
+      <div class="card-shaded" style="text-align:center">
+        <p class="section-label" style="margin-bottom:10px">Answer</p>
+        <p style="font-size:19px;font-weight:500">${escHtml(q.answer)}</p>
+      </div>
+      ${expired?`<div class="alert alert-warning">Time's up — answer revealed automatically</div>`:""}
+      <p class="small muted center">How difficult was this for you?</p>
+      <div class="grid-3">
+        <button class="btn btn-easy   btn-full" data-event="click" data-handler="rateEasy">Easy</button>
+        <button class="btn btn-medium btn-full" data-event="click" data-handler="rateMedium">Medium</button>
+        <button class="btn btn-hard   btn-full" data-event="click" data-handler="rateHard">Hard</button>
+      </div>
+      <p class="small muted center">Easy → appears less often · Hard → appears much more often</p>
+    `}`;
+}
+
+// ── [NEW] renderMCQPractice ────────────────────────────────────
+// Handles the entire MCQ UI: option selection before submit,
+// and colour-coded result display after submit.
+function renderMCQPractice(q) {
+  const { selectedOptions, submitted, expired } = state;
+  const opts = q.options || [];
+
+  // Question card header (same in both pre- and post-submit views)
+  const questionCard = `
+    <div class="card" style="min-height:120px;display:flex;flex-direction:column;justify-content:center">
+      ${q.tags.length?`<div class="tags-row" style="margin-bottom:12px">${q.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>`:""}
+      <div class="row" style="justify-content:center;gap:8px;margin-bottom:10px">
+        <span class="badge-mcq">Multiple choice</span>
+        <span class="small muted">Select all that apply</span>
+      </div>
+      <p style="font-size:19px;font-weight:500;line-height:1.55;text-align:center">${escHtml(q.text)}</p>
+      ${q.timesAnswered>0?`<p class="small muted center" style="margin-top:12px">Studied ${q.timesAnswered}× · ${q.weight===1?"Easy":q.weight===15?"Hard":"Medium"} weight</p>`:""}
+    </div>`;
+
+  // ── PRE-SUBMIT: clickable multi-select option buttons ────────
+  if (!submitted) {
+    const optBtns = opts.map(opt => {
+      const isSel = selectedOptions.includes(opt.id);
+      return `
+        <button class="mcq-option ${isSel?"mcq-selected":""}"
+                data-event="click" data-handler="toggleOpt_${opt.id}">
+          <span class="mcq-checkbox">${isSel?"✓":""}</span>
+          <span>${escHtml(opt.text)}</span>
+        </button>`;
+    }).join("");
+    return `
+      ${questionCard}
+      <div class="col" style="gap:8px">${optBtns}</div>
+      <button class="btn btn-primary btn-full" style="padding:15px;font-size:15px"
+              data-event="click" data-handler="submitMCQ">Submit Answer</button>`;
+  }
+
+  // ── POST-SUBMIT: colour-coded result options ─────────────────
+  const result = getMCQResult(q, selectedOptions);
+
+  // Maps each outcome string to its CSS class, icon character, and label
+  const STYLES = {
+    "correct-hit":  { cls: "res-correct-hit",  icon: "✓", label: "Correct — selected"   },
+    "correct-miss": { cls: "res-correct-miss",  icon: "○", label: "Correct — missed"     },
+    "wrong-picked": { cls: "res-wrong-picked",  icon: "✗", label: "Incorrect — selected" },
+    "wrong-skip":   { cls: "res-wrong-skip",    icon: " ", label: ""                      },
+  };
+
+  const resultOpts = result.outcomes.map(opt => {
+    const s = STYLES[opt.outcome];
+    return `
+      <div class="mcq-option mcq-result ${s.cls}">
+        <span class="mcq-icon">${s.icon}</span>
+        <span style="flex:1">${escHtml(opt.text)}</span>
+        ${s.label?`<span class="mcq-result-label">${s.label}</span>`:""}
+      </div>`;
+  }).join("");
+
+  // Plain-English summary banner
+  let summary;
+  if (result.perfect) {
+    summary = `<div class="alert alert-success">
+      Perfect! All ${result.correctTotal} correct answer${result.correctTotal!==1?"s":""} selected, none wrong.
+    </div>`;
+  } else {
+    const parts = [];
+    const missed = result.correctTotal - result.correctHit;
+    if (missed              > 0) parts.push(`${missed} correct answer${missed!==1?"s":""} missed`);
+    if (result.wrongPicked  > 0) parts.push(`${result.wrongPicked} wrong selection${result.wrongPicked!==1?"s":""}`);
+    summary = `<div class="alert alert-warning">${parts.join(" · ")}.</div>`;
+  }
+
+  return `
+    ${questionCard}
+    ${expired?`<div class="alert alert-warning">Time's up — answer submitted automatically</div>`:""}
+    ${summary}
+    <div class="col" style="gap:8px">${resultOpts}</div>
+    <div class="mcq-legend">
+      <span><span style="color:var(--green);font-weight:700">✓</span> Correct, selected</span>
+      <span><span style="color:var(--amber);font-weight:700">○</span> Correct, missed</span>
+      <span><span style="color:var(--red);font-weight:700">✗</span> Wrong, selected</span>
+    </div>
+    <p class="small muted center">How difficult was this question?</p>
+    <div class="grid-3">
+      <button class="btn btn-easy   btn-full" data-event="click" data-handler="rateEasy">Easy</button>
+      <button class="btn btn-medium btn-full" data-event="click" data-handler="rateMedium">Medium</button>
+      <button class="btn btn-hard   btn-full" data-event="click" data-handler="rateHard">Hard</button>
+    </div>`;
+}
+
+// [CHANGED] renderManage: MCQ cards show badge + option summary instead of answer text
+function renderManage() {
+  const { cards, deleteConfirm } = state;
+  return `
+    <div class="col" style="gap:16px">
+      <div class="row-between">
+        <button class="btn" style="padding:7px 13px;font-size:13px" data-event="click" data-handler="goHome">← Back</button>
+        <h2>My Cards (${cards.length})</h2>
+        <button class="btn" style="padding:7px 13px;font-size:13px" data-event="click" data-handler="openAdd">+ Add</button>
+      </div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">
+        <button class="btn" style="padding:6px 12px;font-size:12px" data-event="click" data-handler="exportCards">↓ Export JSON</button>
+        <button class="btn" style="padding:6px 12px;font-size:12px" data-event="click" data-handler="importCards">↑ Import JSON</button>
+      </div>
+      ${cards.length === 0 ? `
+        <div class="card" style="text-align:center;padding:40px">
+          <p class="muted" style="margin-bottom:16px">No cards yet.</p>
+          <button class="btn btn-primary" data-event="click" data-handler="openAdd">Add your first card</button>
+        </div>
+      ` : cards.map(c => `
+        <div class="card" style="display:flex;align-items:flex-start;gap:12px;padding:16px 20px">
+          <div style="flex:1;min-width:0">
+            <p style="font-weight:500;font-size:14px;margin-bottom:4px;line-height:1.4">${escHtml(c.text)}</p>
+            ${c.type === "mcq"
+              ? `<p class="muted" style="font-size:13px;margin-bottom:8px">${(c.options||[]).length} options · ${(c.options||[]).filter(o=>o.correct).length} correct</p>`
+              : `<p class="muted" style="font-size:13px;margin-bottom:${c.tags.length||c.timesAnswered>0?"8":"0"}px;line-height:1.4">${escHtml(c.answer)}</p>`}
+            <div class="tags-row">
+              ${c.type==="mcq"?`<span class="badge-mcq">MCQ</span>`:""}
+              ${c.tags.map(t=>`<span class="tag">${t}</span>`).join("")}
+              ${c.timesAnswered>0?`<span class="small muted">×${c.timesAnswered} studied</span>`:""}
+            </div>
+          </div>
+          <div class="col" style="gap:6px;flex-shrink:0">
+            <button class="btn" style="font-size:12px;padding:5px 10px" data-event="click" data-handler="editCard_${c.id}">Edit</button>
+            ${deleteConfirm===c.id
+              ? `<div class="row" style="gap:4px">
+                  <button class="btn btn-danger" style="font-size:11px;padding:4px 8px" data-event="click" data-handler="deleteCard_${c.id}">Yes</button>
+                  <button class="btn" style="font-size:11px;padding:4px 8px" data-event="click" data-handler="cancelDelete">No</button>
+                </div>`
+              : `<button class="btn btn-danger" style="font-size:12px;padding:5px 10px" data-event="click" data-handler="deleteCard_${c.id}">Delete</button>`}
+          </div>
+        </div>
+      `).join("")}
+    </div>`;
+}
+
+// [CHANGED] renderForm: adds type selector + MCQ option builder section
+function renderForm() {
+  const editing = !!state.formId;
+  const isMCQ   = state.formType === "mcq";
+
+  // [NEW] MCQ option builder — one row per option
+  const mcqBuilder = `
+    <div>
+      <label>Answer Options (${state.formOptions.length}/10)
+        <span style="font-weight:400;color:var(--text3)"> — click ○/✓ to toggle correct</span>
+      </label>
+      <div class="col" style="gap:8px;margin-top:8px">
+        ${state.formOptions.map((opt, idx) => `
+          <div class="mcq-form-row">
+            <!-- Correct toggle: ○ = incorrect, ✓ = correct -->
+            <button class="mcq-correct-toggle ${opt.correct?"is-correct":""}"
+                    title="${opt.correct?"Mark as incorrect":"Mark as correct"}"
+                    data-event="click" data-handler="toggleOptCorrect_${opt.id}">
+              ${opt.correct?"✓":"○"}
+            </button>
+            <!-- id used by readFormInputs() to capture text before re-render -->
+            <input id="optText_${opt.id}" type="text"
+                   value="${escHtml(opt.text)}" placeholder="Option ${idx+1}" />
+            <button class="btn btn-danger" style="padding:6px 10px;font-size:13px;flex-shrink:0"
+                    ${state.formOptions.length<=2?"disabled":""}
+                    data-event="click" data-handler="removeOpt_${opt.id}">×</button>
+          </div>`).join("")}
+        ${state.formOptions.length < 10
+          ? `<button class="btn" style="font-size:13px;align-self:flex-start"
+                     data-event="click" data-handler="addFormOption">+ Add Option</button>`
+          : `<p class="small muted">Maximum 10 options reached.</p>`}
+      </div>
+    </div>`;
+
+  return `
+    <div class="col" style="gap:20px;max-width:500px;margin:0 auto">
+      <div class="row-between">
+        <button class="btn" style="padding:7px 13px;font-size:13px" data-event="click" data-handler="goManage">← Cancel</button>
+        <h2>${editing?"Edit Card":"New Card"}</h2>
+        <div style="width:72px"></div>
+      </div>
+
+      <!-- [NEW] Question type selector -->
+      <div>
+        <label>Question Type</label>
+        <div class="row" style="gap:8px;margin-top:4px">
+          <button class="type-btn ${!isMCQ?"active":""}" data-event="click" data-handler="setFormTypeFlashcard">Flashcard</button>
+          <button class="type-btn ${isMCQ?"active":""}"  data-event="click" data-handler="setFormTypeMcq">Multiple Choice</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Question *</label>
+        <textarea id="formText" placeholder="What would you like to be tested on?" rows="3">${escHtml(state.formText)}</textarea>
+      </div>
+
+      <!-- [NEW] Show answer textarea for Flashcard, option builder for MCQ -->
+      ${!isMCQ ? `
+        <div class="field">
+          <label>Answer *</label>
+          <textarea id="formAnswer" placeholder="The correct answer..." rows="2">${escHtml(state.formAnswer)}</textarea>
+        </div>` : mcqBuilder}
+
+      <div class="field">
+        <label>Tags — comma-separated (optional)</label>
+        <input id="formTags" value="${escHtml(state.formTags)}" placeholder="e.g. math, chapter-3, exam-prep" />
+      </div>
+
+      ${state.formError?`<p class="error">${state.formError}</p>`:""}
+      <button class="btn btn-primary btn-full" style="padding:13px;font-size:15px"
+              data-event="click" data-handler="saveForm">
+        ${editing?"Save Changes":"Add Card"}
+      </button>
+    </div>`;
+}
+
+function escHtml(str) {
+  return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function render() {
+  let html = "";
+  if      (state.screen==="home")     html = renderHome();
+  else if (state.screen==="practice") html = renderPractice();
+  else if (state.screen==="manage")   html = renderManage();
+  else if (state.screen==="form")     html = renderForm();
+  root.innerHTML = html;
+  attachEvents();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Event delegation
+//  [CHANGED] Extended with MCQ handlers + MCQ option input reader
+// ══════════════════════════════════════════════════════════════
+const HANDLERS = {
+  // ── Unchanged ──
+  startPractice, exitPractice, skipCard, revealAnswer,
+  rateEasy:   () => rateCard("easy"),
+  rateMedium: () => rateCard("medium"),
+  rateHard:   () => rateCard("hard"),
+  openAdd, goManage, goHome, saveForm,
+  exportCards, importCards, resetProgress,
+  cancelDelete: () => setState({ deleteConfirm: null }),
+  // ── [NEW] MCQ practice ──
+  submitMCQ,
+  // ── [NEW] Form type switchers ──
+  setFormTypeFlashcard: () => setState({ formType: "flashcard" }),
+  setFormTypeMcq: () => setState({
+    formType: "mcq",
+    // Seed two blank rows if switching from flashcard with no options yet
+    formOptions: state.formOptions.length >= 2
+      ? state.formOptions
+      : [{ id: genId(), text: "", correct: false }, { id: genId(), text: "", correct: false }],
+  }),
+  // ── [NEW] Form option management ──
+  addFormOption,
+};
+
+// Reads all form input values into state before any re-render.
+// This preserves typed text when the form re-renders (e.g. after adding an option row).
+function readFormInputs() {
+  const t  = document.getElementById("formText");
+  const a  = document.getElementById("formAnswer");
+  const tg = document.getElementById("formTags");
+  if (t)  state.formText   = t.value;
+  if (a)  state.formAnswer = a.value;
+  if (tg) state.formTags   = tg.value;
+  // [NEW] Capture MCQ option text fields by their DOM id before re-render
+  if (state.formType === "mcq") {
+    state.formOptions = state.formOptions.map(opt => {
+      const el = document.getElementById("optText_" + opt.id);
+      return el ? { ...opt, text: el.value } : opt;
+    });
+  }
+}
+
+function attachEvents() {
+  root.querySelectorAll("[data-event]").forEach(el => {
+    const event   = el.getAttribute("data-event");
+    const handler = el.getAttribute("data-handler");
+    el.addEventListener(event, () => {
+      if (state.screen === "form") readFormInputs(); // always snapshot form first
+      if (HANDLERS[handler]) { HANDLERS[handler](); return; }
+
+      // Dynamic (prefix-based) handlers
+      if (handler.startsWith("setTag_"))            { setState({ filterTag: handler.slice(7) }); return; }
+      if (handler.startsWith("editCard_"))          { const c = state.cards.find(c=>c.id===handler.slice(9)); if(c) openEdit(c); return; }
+      if (handler.startsWith("deleteCard_"))        { deleteCard(handler.slice(11)); return; }
+      // [NEW] Toggle a selected option (practice)
+      if (handler.startsWith("toggleOpt_"))         { toggleOption(handler.slice(10)); return; }
+      // [NEW] Toggle an option's correct flag (form)
+      if (handler.startsWith("toggleOptCorrect_"))  { toggleFormOptionCorrect(handler.slice(17)); return; }
+      // [NEW] Remove an option row (form)
+      if (handler.startsWith("removeOpt_"))         { removeFormOption(handler.slice(10)); return; }
+    });
+  });
+}
+
+render(); // boot
+</script>
+</body>
+</html>
